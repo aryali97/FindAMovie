@@ -1,0 +1,29 @@
+# --- secrets ---
+.env
+.env.*
+!.env.example
+
+# --- personal project context (not for public repo) ---
+CLAUDE.md
+
+# --- conda env (directory-local) ---
+env/
+.condarc
+
+# --- stray virtualenv (conda env/ is canonical) ---
+.venv/
+
+# --- data (large + reproducible via scripts/subset.py) ---
+data/
+
+# --- python ---
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+*.egg-info/
+.pytest_cache/
+
+# --- os / editor ---
+.DS_Store
+.vscode/
+.idea/
