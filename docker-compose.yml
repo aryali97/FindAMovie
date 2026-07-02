@@ -1,0 +1,28 @@
+# Local pgvector-enabled Postgres for the movie-recommender retrieval layer.
+# Holds movie metadata + embedding vectors in one database.
+#
+#   docker compose up -d       # start (reads .env for credentials)
+#   docker compose down        # stop, KEEP data (named volume persists)
+#   docker compose down -v     # stop and WIPE data
+#
+services:
+  db:
+    image: pgvector/pgvector:pg16   # Postgres 16 with the vector extension preinstalled
+    container_name: movie-recommender-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"      # host:container — reach it at localhost:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # persistence across restarts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
