@@ -5,6 +5,7 @@
 
 # --- personal project context (not for public repo) ---
 CLAUDE.md
+STRETCH.md
 
 # --- conda env (directory-local) ---
 env/
