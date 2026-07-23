@@ -63,6 +63,56 @@ async def get_movie(conn: AsyncConnection, movie_id: int) -> MovieDetail | None:
     )
 
 
+async def get_movies_by_ids(
+    conn: AsyncConnection, movie_ids: list[int]
+) -> list[MovieDetail]:
+    """Full metadata for a set of ids, returned in the order given.
+
+    Used to hydrate cheap cosine candidates (which carry only id/title/etc.) with
+    the overview/cast/tagline the LLM reranker needs. One query, then re-ordered
+    in Python to match movie_ids since SQL makes no ordering promise.
+    """
+    if not movie_ids:
+        return []
+    rows = await (
+        await conn.execute(
+            """
+            SELECT movie_id, tmdb_id, title, year, genres, director,
+                   "cast", tagline, overview
+            FROM movies WHERE movie_id = ANY(%s::int[])
+            """,
+            (movie_ids,),
+        )
+    ).fetchall()
+    by_id = {
+        r[0]: MovieDetail(
+            movie_id=r[0], tmdb_id=r[1], title=r[2], year=r[3], genres=r[4],
+            director=r[5], cast=r[6], tagline=r[7], overview=r[8],
+        )
+        for r in rows
+    }
+    return [by_id[i] for i in movie_ids if i in by_id]
+
+
+async def liked_movie_titles(
+    conn: AsyncConnection, user_ids: list[str], limit: int = 50
+) -> list[str]:
+    """Titles the user set has liked — the taste signal handed to the reranker."""
+    rows = await (
+        await conn.execute(
+            """
+            SELECT m.title, m.year
+            FROM swipes s JOIN movies m ON m.movie_id = s.movie_id
+            WHERE s.user_id = ANY(%s) AND s.liked = true
+            ORDER BY s.created_at DESC
+            LIMIT %s
+            """,
+            (user_ids, limit),
+        )
+    ).fetchall()
+    return [f"{t} ({y})" if y else t for t, y in rows]
+
+
 async def search_movies(
     conn: AsyncConnection, q: str, limit: int = 20
 ) -> list[Movie]:

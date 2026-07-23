@@ -24,6 +24,17 @@ class Settings:
         self.pool_min_size = int(os.environ.get("POOL_MIN_SIZE", "1"))
         self.pool_max_size = int(os.environ.get("POOL_MAX_SIZE", "10"))
 
+        # LLM reranker (Week 3). The API key is read from the environment by the
+        # Anthropic SDK directly (ANTHROPIC_API_KEY); load_dotenv above pulls it
+        # in from .env. Everything else here is a tunable.
+        self.anthropic_model = os.environ.get("ANTHROPIC_MODEL", "claude-haiku-4-5")
+        # How many cheap cosine candidates to hand the reranker (N). The LLM then
+        # picks/reorders the top k. Larger N = better recall, more input tokens.
+        self.rerank_candidates = int(os.environ.get("RERANK_CANDIDATES", "40"))
+        # Hard cap on the reranker's output — it only emits an id list, so small.
+        self.rerank_max_tokens = int(os.environ.get("RERANK_MAX_TOKENS", "1024"))
+        self.anthropic_key_present = bool(os.environ.get("ANTHROPIC_API_KEY"))
+
     @property
     def conninfo(self) -> str:
         return (
